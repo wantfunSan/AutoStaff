@@ -1,23 +1,12 @@
 import discord
 import requests
-import time
-import json
 
 from discord.ext import commands
 from discord import app_commands
 
-import asyncio
-from asyncio import sleep
-
 from openai import OpenAI
 
 import sqlite3
-
-import time
-import os
-
-import functools 
-import operator
 
 conn = sqlite3.connect('data.db')
 c = conn.cursor()
@@ -35,18 +24,22 @@ c.execute('''CREATE TABLE IF NOT EXISTS data (
 			)''')
 
 config = {
-	'token': 'TOKEN',
+	'token': 'toke',
 	'bot': 'AutoStaff',
-	'id': '7534'
+	'id': 'botId'
 }
 
 bot = commands.Bot(command_prefix = '!', intents=discord.Intents.all())
 bot.remove_command('help')
 
+def can_send_messages(channel: discord.TextChannel) -> bool:
+	perms = channel.permissions_for(channel.guild.me)
+	return perms.send_messages and perms.embed_links and perms.view_channel
+
 def askAI(termin, meaning):
 	client = OpenAI(
 		base_url="https://api.orcarouter.ai/v1",
-		api_key='API-KEY',
+		api_key='api_key',
 	)
 	response = client.chat.completions.create(
 		model="orcarouter/free",
@@ -210,13 +203,13 @@ async def help(interaction: discord.Interaction):
 
 	embed = discord.Embed(color = discord.Color.orange())
 	embed.add_field(name='**Установить канал**', value='``set_channel [упоминание канала]``; ')
-	embed.add_field(name='**Установить минимальный возраст**', value='``set_age [минимальный_возраст]``')
-	embed.add_field(name='**Установить минимальную оценку адекватности**', value='``set_adequacy [минимальная_оценка_адекватности]``')
-	embed.add_field(name='**Установить минимальную оценку грамотности**', value='``set_literacy [минимальная_оценка_грамотности]``')
-	embed.add_field(name='**Установить минимальную оценку активности**', value='``set_activity [минимальная_оценка_активности]``')
-	embed.add_field(name='**Установить минимальную оценку токсичности**', value='``set_toxicity [минимальная_оценка_токсичности]``')
-	embed.add_field(name='**ПЛАТНО!!! Установить определение термина**', value='``set_termin [термин]``')
-	embed.add_field(name=' ', value = '**МАКСИМУМ 5 ПУНКТОВ**')
+	embed.add_field(name='**Установить минимальный возраст**', value='``set_age [минимальный_возраст]`` Для сброса ``0``')
+	embed.add_field(name='**Установить минимальную оценку адекватности**', value='``set_adequacy [минимальная_оценка_адекватности]`` Для сброса ``0``')
+	embed.add_field(name='**Установить минимальную оценку грамотности**', value='``set_literacy [минимальная_оценка_грамотности]`` Для сброса ``0``')
+	embed.add_field(name='**Установить минимальную оценку активности**', value='``set_activity [минимальная_оценка_активности]`` Для сброса ``0``')
+	embed.add_field(name='**Установить минимальную оценку токсичности**', value='``set_toxicity [минимальная_оценка_токсичности]`` Для сброса ``0``')
+	embed.add_field(name='**ПЛАТНО!!! Установить определение термина**', value='``set_termin [термин]`` Для сброса ``reset``')
+	embed.add_field(name='**Ограничение**', value = 'МАКСИМУМ 5 ПУНКТОВ')
 	embed.set_footer(text='''Created by wF#2016. Support author you can at https://www.donationalerts.com/r/petelinka''')
 	await interaction.followup.send(embed=embed, ephemeral=True)
 
@@ -225,6 +218,10 @@ async def help(interaction: discord.Interaction):
 @app_commands.checks.has_permissions(manage_roles = True)
 async def set_channel(interaction: discord.Interaction, channel1: discord.channel.TextChannel):
 	await interaction.response.defer(ephemeral=True)
+
+	if not can_send_messages(channel1):
+		await interaction.followup.send(f'У меня нет доступа к каналу <#{channel1.id}>!', ephemeral=True)
+		return
 
 	c.execute('SELECT * FROM data WHERE serverName = ?', (interaction.guild.name, ))
 	info = c.fetchone()
@@ -248,9 +245,26 @@ async def set_age(interaction: discord.Interaction, age: int = 0):
 
 	c.execute('SELECT * FROM data WHERE serverName = ?', (interaction.guild.name, ))
 	info = c.fetchone()
+
+	if age == 0:
+		if info is None:
+			await interaction.followup.send(f'У вас не установлено ни одно ограничение', ephemeral=True)
+		else:
+			c.execute('UPDATE data SET age = ? WHERE serverName = ?', (None, interaction.guild.name))
+			conn.commit()
+			await interaction.followup.send(f'Ограничение успешно сброшено!', ephemeral=True)
+		return
+
 	if info is None:
 		c.execute('INSERT INTO data VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (interaction.guild.name, age, None, None, None, None, None, None))
 	else:
+		not_none = 0
+		for i in range(len(info)):
+			if info[i] != None:
+				not_none += 1
+		if not_none >= 7:
+			await interaction.followup.send(f'Достигнут лимит', ephemeral=True)
+			return
 		c.execute('UPDATE data SET age = ? WHERE serverName = ?', (age, interaction.guild.name))
 	conn.commit()
 	await interaction.followup.send(f'Минимальный возраст успешно установлен!', ephemeral=True)
@@ -263,9 +277,26 @@ async def set_adequacy(interaction: discord.Interaction, adekvat: int = 0):
 
 	c.execute('SELECT * FROM data WHERE serverName = ?', (interaction.guild.name, ))
 	info = c.fetchone()
+
+	if adekvat == 0:
+		if info is None:
+			await interaction.followup.send(f'У вас не установлено ни одно ограничение', ephemeral=True)
+		else:
+			c.execute('UPDATE data SET adekvat = ? WHERE serverName = ?', (None, interaction.guild.name))
+			conn.commit()
+			await interaction.followup.send(f'Ограничение успешно сброшено!', ephemeral=True)
+		return
+
 	if info is None:
 		c.execute('INSERT INTO data VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (interaction.guild.name, None, adekvat, None, None, None, None, None))
 	else:
+		not_none = 0
+		for i in range(len(info)):
+			if info[i] != None:
+				not_none += 1
+		if not_none >= 7:
+			await interaction.followup.send(f'Достигнут лимит', ephemeral=True)
+			return
 		c.execute('UPDATE data SET adekvat = ? WHERE serverName = ?', (adekvat, interaction.guild.name))
 	conn.commit()
 	await interaction.followup.send(f'Минимальная оценка адекватности успешно установлена!', ephemeral=True)
@@ -278,9 +309,26 @@ async def set_literacy(interaction: discord.Interaction, gramotnost: int = 0):
 
 	c.execute('SELECT * FROM data WHERE serverName = ?', (interaction.guild.name, ))
 	info = c.fetchone()
+
+	if gramotnost == 0:
+		if info is None:
+			await interaction.followup.send(f'У вас не установлено ни одно ограничение', ephemeral=True)
+		else:
+			c.execute('UPDATE data SET gramotnost = ? WHERE serverName = ?', (None, interaction.guild.name))
+			conn.commit()
+			await interaction.followup.send(f'Ограничение успешно сброшено!', ephemeral=True)
+		return
+
 	if info is None:
 		c.execute('INSERT INTO data VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (interaction.guild.name, None, None,gramotnost, None, None, None, None))
 	else:
+		not_none = 0
+		for i in range(len(info)):
+			if info[i] != None:
+				not_none += 1
+		if not_none >= 7:
+			await interaction.followup.send(f'Достигнут лимит', ephemeral=True)
+			return
 		c.execute('UPDATE data SET gramotnost = ? WHERE serverName = ?', (gramotnost, interaction.guild.name))
 	conn.commit()
 	await interaction.followup.send(f'Минимальная оценка грамотности успешно установлена!', ephemeral=True)
@@ -293,9 +341,26 @@ async def set_activity(interaction: discord.Interaction, activity: int = 0):
 
 	c.execute('SELECT * FROM data WHERE serverName = ?', (interaction.guild.name, ))
 	info = c.fetchone()
+
+	if activity == 0:
+		if info is None:
+			await interaction.followup.send(f'У вас не установлено ни одно ограничение', ephemeral=True)
+		else:
+			c.execute('UPDATE data SET activity = ? WHERE serverName = ?', (None, interaction.guild.name))
+			conn.commit()
+			await interaction.followup.send(f'Ограничение успешно сброшено!', ephemeral=True)
+		return
+
 	if info is None:
 		c.execute('INSERT INTO data VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (interaction.guild.name, None, None, None, activity, None, None, None))
 	else:
+		not_none = 0
+		for i in range(len(info)):
+			if info[i] != None:
+				not_none += 1
+		if not_none >= 7:
+			await interaction.followup.send(f'Достигнут лимит', ephemeral=True)
+			return
 		c.execute('UPDATE data SET activity = ? WHERE serverName = ?', (activity, interaction.guild.name))
 	conn.commit()
 	await interaction.followup.send(f'Минимальная оценка активности успешно установлена!', ephemeral=True)
@@ -308,9 +373,26 @@ async def set_toxicity(interaction: discord.Interaction, toxic: int = 0):
 
 	c.execute('SELECT * FROM data WHERE serverName = ?', (interaction.guild.name, ))
 	info = c.fetchone()
+
+	if toxic == 0:
+		if info is None:
+			await interaction.followup.send(f'У вас не установлено ни одно ограничение', ephemeral=True)
+		else:
+			c.execute('UPDATE data SET toxic = ? WHERE serverName = ?', (None, interaction.guild.name))
+			conn.commit()
+			await interaction.followup.send(f'Ограничение успешно сброшено!', ephemeral=True)
+		return
+
 	if info is None:
 		c.execute('INSERT INTO data VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (interaction.guild.name, None, None, None, None, toxic, None, None))
 	else:
+		not_none = 0
+		for i in range(len(info)):
+			if info[i] != None:
+				not_none += 1
+		if not_none >= 7:
+			await interaction.followup.send(f'Достигнут лимит', ephemeral=True)
+			return
 		c.execute('UPDATE data SET toxic = ? WHERE serverName = ?', (toxic, interaction.guild.name))
 	conn.commit()
 	await interaction.followup.send(f'Максимальная оценка токсичности успешно установлена!', ephemeral=True)
@@ -331,9 +413,26 @@ async def set_termin(interaction: discord.Interaction, termin: str = None):
 
 	c.execute('SELECT * FROM data WHERE serverName = ?', (interaction.guild.name, ))
 	info = c.fetchone()
+
+	if termin == 'reset':
+		if info is None:
+			await interaction.followup.send(f'У вас не установлено ни одно ограничение', ephemeral=True)
+		else:
+			c.execute('UPDATE data SET termin = ? WHERE serverName = ?', (None, interaction.guild.name))
+			conn.commit()
+			await interaction.followup.send(f'Ограничение успешно сброшено!', ephemeral=True)
+		return
+
 	if info is None:
 		c.execute('INSERT INTO data VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (interaction.guild.name, None, None, None, None, None, termin, None))
 	else:
+		not_none = 0
+		for i in range(len(info)):
+			if info[i] != None:
+				not_none += 1
+		if not_none >= 7:
+			await interaction.followup.send(f'Достигнут лимит', ephemeral=True)
+			return
 		c.execute('UPDATE data SET termin = ? WHERE serverName = ?', (termin, interaction.guild.name))
 	conn.commit()
 	await interaction.followup.send(f'Термин успешно установлен!', ephemeral=True)
