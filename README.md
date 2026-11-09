@@ -7,7 +7,7 @@ AutoStaff-это бот для автоматической проверки а�
 
 # Сайт
 
-<a href='http://vlahouse.ru/projects/btcb/'>http://vlahouse.ru/projects/af/</a>
+<a href='https://wantfun.ru/projects/btcb/'>https://wantfun.ru/projects/af/</a>
 
 
 # Установка
@@ -19,7 +19,7 @@ pip install discord.py openai requests
 ```
 
 #### Документация
-<p>Сайт разработчика: <a href='http://vlahouse.ru/documentation/af/'>http://vlahouse.ru/documentation/af/</a>
+<p>Сайт разработчика: <a href='https://wantfun.ru/documentation/af/'>https://wantfun.ru/documentation/af/</a>
 
 # Обратная связь
 

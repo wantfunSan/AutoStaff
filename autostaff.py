@@ -24,7 +24,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS data (
 			)''')
 
 config = {
-	'token': 'toke',
+	'token': 'token',
 	'bot': 'AutoStaff',
 	'id': 'botId'
 }
@@ -39,7 +39,7 @@ def can_send_messages(channel: discord.TextChannel) -> bool:
 def askAI(termin, meaning):
 	client = OpenAI(
 		base_url="https://api.orcarouter.ai/v1",
-		api_key='api_key',
+		api_key='api-key',
 	)
 	response = client.chat.completions.create(
 		model="orcarouter/free",
@@ -180,7 +180,7 @@ class OpenModalButton(discord.ui.Button):
 		try:
 			await interaction.response.send_modal(MyModal(serverName=interaction.guild.name))
 		except Exception as err:
-			await interaction.response.send_messsage('Бот не настроен. Ожидайте объявлений от администрации', ephemeral = True)
+			await interaction.response.send_message('Бот не настроен. Ожидайте объявлений от администрации', ephemeral = True)
 
 class MyView(discord.ui.View):
 	def __init__(self):
