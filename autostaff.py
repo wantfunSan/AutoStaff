@@ -63,13 +63,13 @@ class MyModal(discord.ui.Modal, title='Анкета'):
 		data = c.fetchone()
 
 		if data[1] != None:
-			self.add_item(discord.ui.TextInput(label="Возраст"))
+			self.add_item(discord.ui.TextInput(label="Возраст", placeholder='Число в диапазоне от 0 до 100'))
 			self.params['age'] = data[1]
 			self.texts.append(0)
 		else:
 			self.texts.append(None)
 		if data[2] != None: 
-			self.add_item(discord.ui.TextInput(label="Оцените вашу адекватность"))
+			self.add_item(discord.ui.TextInput(label="Оцените вашу адекватность", placeholder='Число в диапазоне от 0 до 10'))
 			self.params['adequacy'] = data[2]
 			self.params['age'] = data[1]
 
@@ -80,7 +80,7 @@ class MyModal(discord.ui.Modal, title='Анкета'):
 		else:
 			self.texts.append(None)
 		if data[3] != None:
-			self.add_item(discord.ui.TextInput(label="Оцените вашу грамотность"))
+			self.add_item(discord.ui.TextInput(label="Оцените вашу грамотность", placeholder='Число в диапазоне от 0 до 10'))
 			self.params['literacy'] = data[3]
 			notNone = None
 			for i in range(len(self.texts)):
@@ -93,7 +93,7 @@ class MyModal(discord.ui.Modal, title='Анкета'):
 		else:
 			self.texts.append(None)
 		if data[4] != None:
-			self.add_item(discord.ui.TextInput(label="Оцените вашу активность"))
+			self.add_item(discord.ui.TextInput(label="Оцените вашу активность", placeholder='Число в диапазоне от 0 до 10'))
 			self.params['activity'] = data[4]
 			notNone = None
 			for i in range(len(self.texts)):
@@ -107,7 +107,7 @@ class MyModal(discord.ui.Modal, title='Анкета'):
 			self.texts.append(None)
 			
 		if data[5] != None: 
-			self.add_item(discord.ui.TextInput(label="Оцените вашу токсичность"))
+			self.add_item(discord.ui.TextInput(label="Оцените вашу токсичность", placeholder='Число в диапазоне от 0 до 10'))
 			self.params['toxicity'] = data[5]
 			notNone = None
 			for i in range(len(self.texts)):
@@ -120,7 +120,7 @@ class MyModal(discord.ui.Modal, title='Анкета'):
 		else:
 			self.texts.append(None)
 		if data[6] != None:
-			self.add_item(discord.ui.TextInput(label=f'Обоснуйте термин "{data[6]}"', style=discord.TextStyle.long))
+			self.add_item(discord.ui.TextInput(label=f'Обоснуйте термин "{data[6]}"', style=discord.TextStyle.long, placeholder='Объясните данный термин, можно коротко'))
 			self.params['termin'] = data[6]
 			notNone = None
 			for i in range(len(self.texts)):
@@ -136,26 +136,41 @@ class MyModal(discord.ui.Modal, title='Анкета'):
 	async def on_submit(self, interaction: discord.Interaction):
 		await interaction.response.defer()
 		self.incorrect = 0
+		self.wrong_answer = 0
 
 		if 'age' in self.params:
+			if int(str(self.children[self.texts[0]])) < 0 or int(str(self.children[self.texts[0]])) > 100:
+				self.wrong_answer += 1
 			if self.params['age'] > int(str(self.children[self.texts[0]])):
 				self.incorrect+=1
 		if 'adequacy' in self.params:
+			if int(str(self.children[self.texts[1]])) < 0 or int(str(self.children[self.texts[1]])) > 10:
+				self.wrong_answer += 1
 			if self.params['adequacy'] > int(str(self.children[self.texts[1]])):
 				self.incorrect+=1
 		if 'literacy' in self.params:
+			if int(str(self.children[self.texts[2]])) < 0 or int(str(self.children[self.texts[2]])) > 10:
+				self.wrong_answer += 1
 			if self.params['literacy'] > int(str(self.children[self.texts[2]])):
 				self.incorrect+=1
 		if 'activity' in self.params:
+			if int(str(self.children[self.texts[3]])) < 0 or int(str(self.children[self.texts[3]])) > 10:
+				self.wrong_answer += 1
 			if self.params['activity'] > int(str(self.children[self.texts[3]])):
 				self.incorrect+=1
 		if 'toxicity' in self.params:
+			if int(str(self.children[self.texts[4]])) < 0 or int(str(self.children[self.texts[4]])) > 10:
+				self.wrong_answer += 1
 			if self.params['toxicity'] < int(str(self.children[self.texts[4]])):
 				self.incorrect+=1
 		if 'termin' in self.params:
 			result = askAI(self.params['termin'], str(self.children[self.texts[5]]))
 			if not result:
 				self.incorrect+=1
+
+
+		if self.wrong_answer > 0:
+			await interaction.followup.send(f'Вы не прошли, так как вы указали неправильные значения', file = discord.File('orig-1-1.gif'), ephemeral=True)
 
 		if self.incorrect == 0:
 			channel2 = await interaction.guild.create_voice_channel(name=f'Опрос {interaction.user.display_name}')
@@ -164,6 +179,7 @@ class MyModal(discord.ui.Modal, title='Анкета'):
 				await interaction.followup.send(f'Вы прошли! Ожидайте захода проверяющего состава в голосовой канал!', file = discord.File('AD6J8Sd-2-1.gif'), ephemeral=True)
 			except discord.errors.HTTPException:
 				await interaction.followup.send(f'Вы прошли! Зайдите в <#{channel2.id}> и ожидайте захода проверяющего состава в голосовой канал!', file = discord.File('AD6J8Sd-2-1.gif'), ephemeral=True)
+
 		else:
 			await interaction.followup.send(f'Вы не прошли, так как вы не соответсвуете критериям отбора', file = discord.File('orig-1-1.gif'), ephemeral=True)
 
@@ -256,7 +272,7 @@ async def set_age(interaction: discord.Interaction, age: int = 0):
 		return
 
 	if age < 0 or age > 100:
-		await interaction.followup.send(f'Нельзя ставить такие числа', ephemeral=True)
+		await interaction.followup.send(f'Нельзя ставить такие числа (допустимый диапазон от 0 до 100)', ephemeral=True)
 		return
 
 	if info is None:
@@ -292,7 +308,7 @@ async def set_adequacy(interaction: discord.Interaction, adekvat: int = 0):
 		return
 
 	if adekvat < 0 or adekvat > 10:
-		await interaction.followup.send(f'Нельзя ставить такие числа', ephemeral=True)
+		await interaction.followup.send(f'Нельзя ставить такие числа (допустимый диапазон от 0 до 10)', ephemeral=True)
 		return
 
 	if info is None:
@@ -328,7 +344,7 @@ async def set_literacy(interaction: discord.Interaction, gramotnost: int = 0):
 		return
 
 	if gramotnost < 0 or gramotnost > 10:
-		await interaction.followup.send(f'Нельзя ставить такие числа', ephemeral=True)
+		await interaction.followup.send(f'Нельзя ставить такие числа (допустимый диапазон от 0 до 10)', ephemeral=True)
 		return
 
 	if info is None:
@@ -364,7 +380,7 @@ async def set_activity(interaction: discord.Interaction, activity: int = 0):
 		return
 
 	if activity < 0 or activity > 10:
-		await interaction.followup.send(f'Нельзя ставить такие числа', ephemeral=True)
+		await interaction.followup.send(f'Нельзя ставить такие числа (допустимый диапазон от 0 до 10)', ephemeral=True)
 		return
 
 	if info is None:
@@ -400,7 +416,7 @@ async def set_toxicity(interaction: discord.Interaction, toxic: int = 0):
 		return
 
 	if toxic < 0 or toxic > 10:
-		await interaction.followup.send(f'Нельзя ставить такие числа', ephemeral=True)
+		await interaction.followup.send(f'Нельзя ставить такие числа (допустимый диапазон от 0 до 10)', ephemeral=True)
 		return
 
 	if info is None:
