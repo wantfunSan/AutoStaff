@@ -255,6 +255,10 @@ async def set_age(interaction: discord.Interaction, age: int = 0):
 			await interaction.followup.send(f'Ограничение успешно сброшено!', ephemeral=True)
 		return
 
+	if age < 0 or age > 100:
+		await interaction.followup.send(f'Нельзя ставить такие числа', ephemeral=True)
+		return
+
 	if info is None:
 		c.execute('INSERT INTO data VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (interaction.guild.name, age, None, None, None, None, None, None))
 	else:
@@ -285,6 +289,10 @@ async def set_adequacy(interaction: discord.Interaction, adekvat: int = 0):
 			c.execute('UPDATE data SET adekvat = ? WHERE serverName = ?', (None, interaction.guild.name))
 			conn.commit()
 			await interaction.followup.send(f'Ограничение успешно сброшено!', ephemeral=True)
+		return
+
+	if adekvat < 0 or adekvat > 10:
+		await interaction.followup.send(f'Нельзя ставить такие числа', ephemeral=True)
 		return
 
 	if info is None:
@@ -319,6 +327,10 @@ async def set_literacy(interaction: discord.Interaction, gramotnost: int = 0):
 			await interaction.followup.send(f'Ограничение успешно сброшено!', ephemeral=True)
 		return
 
+	if gramotnost < 0 or gramotnost > 10:
+		await interaction.followup.send(f'Нельзя ставить такие числа', ephemeral=True)
+		return
+
 	if info is None:
 		c.execute('INSERT INTO data VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (interaction.guild.name, None, None,gramotnost, None, None, None, None))
 	else:
@@ -351,6 +363,10 @@ async def set_activity(interaction: discord.Interaction, activity: int = 0):
 			await interaction.followup.send(f'Ограничение успешно сброшено!', ephemeral=True)
 		return
 
+	if activity < 0 or activity > 10:
+		await interaction.followup.send(f'Нельзя ставить такие числа', ephemeral=True)
+		return
+
 	if info is None:
 		c.execute('INSERT INTO data VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (interaction.guild.name, None, None, None, activity, None, None, None))
 	else:
@@ -381,6 +397,10 @@ async def set_toxicity(interaction: discord.Interaction, toxic: int = 0):
 			c.execute('UPDATE data SET toxic = ? WHERE serverName = ?', (None, interaction.guild.name))
 			conn.commit()
 			await interaction.followup.send(f'Ограничение успешно сброшено!', ephemeral=True)
+		return
+
+	if toxic < 0 or toxic > 10:
+		await interaction.followup.send(f'Нельзя ставить такие числа', ephemeral=True)
 		return
 
 	if info is None:
