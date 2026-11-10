@@ -171,6 +171,7 @@ class MyModal(discord.ui.Modal, title='Анкета'):
 
 		if self.wrong_answer > 0:
 			await interaction.followup.send(f'Вы не прошли, так как вы указали неправильные значения', file = discord.File('orig-1-1.gif'), ephemeral=True)
+			return
 
 		if self.incorrect == 0:
 			channel2 = await interaction.guild.create_voice_channel(name=f'Опрос {interaction.user.display_name}')
@@ -179,9 +180,11 @@ class MyModal(discord.ui.Modal, title='Анкета'):
 				await interaction.followup.send(f'Вы прошли! Ожидайте захода проверяющего состава в голосовой канал!', file = discord.File('AD6J8Sd-2-1.gif'), ephemeral=True)
 			except discord.errors.HTTPException:
 				await interaction.followup.send(f'Вы прошли! Зайдите в <#{channel2.id}> и ожидайте захода проверяющего состава в голосовой канал!', file = discord.File('AD6J8Sd-2-1.gif'), ephemeral=True)
-
+			return
+		
 		else:
 			await interaction.followup.send(f'Вы не прошли, так как вы не соответсвуете критериям отбора', file = discord.File('orig-1-1.gif'), ephemeral=True)
+			return
 
 class OpenModalButton(discord.ui.Button):
 	def __init__(self):
